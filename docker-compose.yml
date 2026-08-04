@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: reglement-rag-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reglement_rag
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # Hote 5433 -> conteneur 5432, pour eviter tout conflit avec un
+      # PostgreSQL deja installe nativement sur la machine (port 5432 pris).
+      - "5433:5432"
+    volumes:
+      - reglement_rag_pgdata:/var/lib/postgresql/data
+
+volumes:
+  reglement_rag_pgdata:

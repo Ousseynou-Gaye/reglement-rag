@@ -1,0 +1,63 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: reglement-rag
+
+  # --- Connexion PostgreSQL + pgvector (conteneur Docker, voir docker-compose.yml) ---
+  datasource:
+    url: jdbc:postgresql://localhost:5433/reglement_rag
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # --- Upload de fichiers PDF ---
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+  ai:
+    # --- LLM local via Ollama ---
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: llama3.1
+          temperature: 0.2
+      embedding:
+        options:
+          model: nomic-embed-text
+
+    # --- Base vectorielle pgvector ---
+    vectorstore:
+      pgvector:
+        table-name: vector_store
+        schema-name: public
+        initialize-schema: true
+        # nomic-embed-text produit des vecteurs de dimension 768
+        dimensions: 768
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+
+# --- Documentation Swagger / OpenAPI ---
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+logging:
+  level:
+    com.examen.reglementrag: DEBUG
+    org.springframework.ai: INFO
