@@ -1,0 +1,13 @@
+target/
+*.class
+*.iml
+.idea/
+.vscode/
+*.log
+HELP.md
+.mvn/
+mvnw
+mvnw.cmd
+
+# Fichiers PDF importes localement (donnees, pas du code)
+uploads/
