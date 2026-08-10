@@ -26,11 +26,6 @@ spring:
       max-file-size: 20MB
       max-request-size: 20MB
 
-# --- Dossier de stockage physique des PDF importes ---
-app:
-  storage:
-    upload-dir: ./uploads
-
   ai:
     # --- LLM local via Ollama ---
     ollama:
@@ -40,8 +35,7 @@ app:
           model: llama3.1
           temperature: 0.2
       embedding:
-        options:
-          model: nomic-embed-text
+        model: nomic-embed-text
 
     # --- Base vectorielle pgvector ---
     vectorstore:
@@ -53,6 +47,11 @@ app:
         dimensions: 768
         index-type: HNSW
         distance-type: COSINE_DISTANCE
+
+# --- Dossier de stockage physique des PDF importes ---
+app:
+  storage:
+    upload-dir: ./uploads
 
 # --- Documentation Swagger / OpenAPI ---
 springdoc:

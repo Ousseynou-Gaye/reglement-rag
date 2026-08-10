@@ -6,6 +6,7 @@ import com.examen.reglementrag.model.DocumentEntity;
 import com.examen.reglementrag.model.DocumentStatus;
 import com.examen.reglementrag.repository.DocumentRepository;
 import com.examen.reglementrag.service.FileStorageService;
+import com.examen.reglementrag.service.IndexationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -24,13 +25,17 @@ public class DocumentController {
 
     private final DocumentRepository documentRepository;
     private final FileStorageService fileStorageService;
+    private final IndexationService indexationService;
 
-    public DocumentController(DocumentRepository documentRepository, FileStorageService fileStorageService) {
+    public DocumentController(DocumentRepository documentRepository,
+                               FileStorageService fileStorageService,
+                               IndexationService indexationService) {
         this.documentRepository = documentRepository;
         this.fileStorageService = fileStorageService;
+        this.indexationService = indexationService;
     }
 
-    @Operation(summary = "Importer un PDF (etape 1 : stockage + enregistrement en base, statut EN_ATTENTE)")
+    @Operation(summary = "Importer un PDF : stockage, extraction, decoupage en chunks, embeddings, indexation dans pgvector")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentResponse> upload(@RequestParam("file") MultipartFile file) {
         String cheminStockage = fileStorageService.store(file);
@@ -41,8 +46,22 @@ public class DocumentController {
                 .statut(DocumentStatus.EN_ATTENTE)
                 .dateImport(LocalDateTime.now())
                 .build();
-
         document = documentRepository.save(document);
+
+        try {
+            document.setStatut(DocumentStatus.EN_COURS);
+            documentRepository.save(document);
+
+            int nombreChunks = indexationService.indexDocument(document.getId(), cheminStockage);
+
+            document.setStatut(DocumentStatus.INDEXE);
+            document.setNombreChunks(nombreChunks);
+            document = documentRepository.save(document);
+        } catch (Exception e) {
+            document.setStatut(DocumentStatus.ECHEC);
+            documentRepository.save(document);
+            throw new IllegalStateException("Echec de l'indexation du document : " + e.getMessage(), e);
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(DocumentResponse.fromEntity(document));
     }
@@ -55,12 +74,13 @@ public class DocumentController {
                 .toList();
     }
 
-    @Operation(summary = "Supprimer un document et son fichier physique (les vecteurs seront geres en Seance 2 - partie indexation)")
+    @Operation(summary = "Supprimer un document : ses chunks/vecteurs dans pgvector, son fichier physique, puis son enregistrement en base")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         DocumentEntity document = documentRepository.findById(id)
                 .orElseThrow(() -> new DocumentNotFoundException(id));
 
+        indexationService.supprimerChunksDuDocument(id);
         fileStorageService.delete(document.getCheminStockage());
         documentRepository.delete(document);
 
