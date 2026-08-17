@@ -4,6 +4,7 @@ import com.examen.reglementrag.dto.ChatRequest;
 import com.examen.reglementrag.dto.ChatResponse;
 import com.examen.reglementrag.model.Conversation;
 import com.examen.reglementrag.repository.ConversationRepository;
+import com.examen.reglementrag.service.RagAnswer;
 import com.examen.reglementrag.service.RagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,19 +27,24 @@ public class ChatController {
         this.conversationRepository = conversationRepository;
     }
 
-    @Operation(summary = "Poser une question : recherche par similarite dans pgvector, puis reponse generee par le LLM")
+    @Operation(summary = "Poser une question : recherche par similarite dans pgvector, puis reponse generee par le LLM, avec citation des sources")
     @PostMapping
     public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
-        String reponse = ragService.repondre(request.question());
+        RagAnswer ragAnswer = ragService.repondre(request.question());
 
         Conversation conversation = Conversation.builder()
                 .question(request.question())
-                .reponse(reponse)
+                .reponse(ragAnswer.reponse())
                 .dateEchange(LocalDateTime.now())
                 .build();
         conversation = conversationRepository.save(conversation);
 
-        return ChatResponse.fromEntity(conversation);
+        return new ChatResponse(
+                conversation.getQuestion(),
+                conversation.getReponse(),
+                ragAnswer.sources(),
+                conversation.getDateEchange()
+        );
     }
 
     @Operation(summary = "Historique des questions/reponses precedentes (bonus)")

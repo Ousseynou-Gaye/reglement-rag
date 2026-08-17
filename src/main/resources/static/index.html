@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assistant Règlement Pédagogique</title>
+<style>
+  :root {
+    --ink: #1f2430;
+    --ink-soft: #5b6270;
+    --paper: #faf8f4;
+    --panel: #ffffff;
+    --line: #e6e2da;
+    --accent: #7a3b2e;
+    --accent-soft: #f1e4de;
+    --user-bubble: #eef1f6;
+    --bot-bubble: #ffffff;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Georgia", "Iowan Old Style", serif;
+    background: var(--paper);
+    color: var(--ink);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    margin: 4px 0 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+  .layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 0;
+  }
+  aside {
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    padding: 20px;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  aside h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+  }
+  .doc-item {
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+  }
+  .doc-item .name {
+    font-weight: 600;
+    word-break: break-word;
+  }
+  .doc-item .meta {
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    margin-top: 4px;
+  }
+  .doc-item button {
+    margin-top: 8px;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--accent);
+  }
+  .doc-item button:hover { background: var(--accent-soft); }
+  .upload-box {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .upload-box label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .upload-box input[type="file"] { font-size: 0.78rem; width: 100%; }
+  .upload-box button {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .upload-box button:disabled { opacity: 0.5; cursor: default; }
+  .status-line { font-size: 0.75rem; color: var(--ink-soft); margin-top: 8px; min-height: 1em; }
+
+  main.chat {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .msg { max-width: 70%; }
+  .msg.user { align-self: flex-end; }
+  .msg.bot { align-self: flex-start; }
+  .bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    line-height: 1.5;
+    font-size: 0.95rem;
+  }
+  .msg.user .bubble { background: var(--user-bubble); }
+  .msg.bot .bubble { background: var(--bot-bubble); border: 1px solid var(--line); }
+  .sources {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .source-pill {
+    font-size: 0.72rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .empty-state {
+    margin: auto;
+    text-align: center;
+    color: var(--ink-soft);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.9rem;
+    max-width: 360px;
+  }
+  form.composer {
+    display: flex;
+    gap: 10px;
+    padding: 16px 28px 22px;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+  }
+  form.composer input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.95rem;
+  }
+  form.composer input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  form.composer button {
+    padding: 0 20px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  form.composer button:disabled { opacity: 0.5; cursor: default; }
+  .typing { color: var(--ink-soft); font-style: italic; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Assistant Règlement Pédagogique</h1>
+  <p>Chatbot RAG — répond exclusivement à partir des documents indexés ci-contre.</p>
+</header>
+
+<div class="layout">
+  <aside>
+    <h2>Documents indexés</h2>
+    <div id="docList"><p class="status-line">Chargement…</p></div>
+
+    <div class="upload-box">
+      <label for="fileInput">Importer un PDF</label>
+      <input type="file" id="fileInput" accept="application/pdf">
+      <button id="uploadBtn">Importer et indexer</button>
+      <div class="status-line" id="uploadStatus"></div>
+    </div>
+  </aside>
+
+  <main class="chat">
+    <div class="messages" id="messages">
+      <div class="empty-state">Pose une question sur le règlement pédagogique indexé. L'assistant ne répondra qu'à partir des documents importés.</div>
+    </div>
+    <form class="composer" id="composer">
+      <input type="text" id="questionInput" placeholder="Ex : Quels sont les horaires de l'école primaire ?" autocomplete="off">
+      <button type="submit" id="sendBtn">Envoyer</button>
+    </form>
+  </main>
+</div>
+
+<script>
+const API_BASE = '';
+
+const messagesEl = document.getElementById('messages');
+const composer = document.getElementById('composer');
+const questionInput = document.getElementById('questionInput');
+const sendBtn = document.getElementById('sendBtn');
+const docListEl = document.getElementById('docList');
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const uploadStatus = document.getElementById('uploadStatus');
+
+function clearEmptyState() {
+  const empty = messagesEl.querySelector('.empty-state');
+  if (empty) empty.remove();
+}
+
+function addMessage(role, text, sources) {
+  clearEmptyState();
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+
+  if (sources && sources.length > 0) {
+    const src = document.createElement('div');
+    src.className = 'sources';
+    sources.forEach(s => {
+      const pill = document.createElement('span');
+      pill.className = 'source-pill';
+      pill.textContent = s.pageNumber != null
+        ? `Document #${s.documentId} · page ${s.pageNumber}`
+        : `Document #${s.documentId}`;
+      src.appendChild(pill);
+    });
+    wrap.appendChild(src);
+  }
+
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return wrap;
+}
+
+composer.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const question = questionInput.value.trim();
+  if (!question) return;
+
+  addMessage('user', question);
+  questionInput.value = '';
+  sendBtn.disabled = true;
+
+  const typingEl = document.createElement('div');
+  typingEl.className = 'msg bot';
+  typingEl.innerHTML = '<div class="bubble typing">L\'assistant réfléchit…</div>';
+  messagesEl.appendChild(typingEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question })
+    });
+    const data = await res.json();
+    typingEl.remove();
+    if (!res.ok) {
+      addMessage('bot', data.message || 'Une erreur est survenue.');
+    } else {
+      addMessage('bot', data.reponse, data.sources);
+    }
+  } catch (err) {
+    typingEl.remove();
+    addMessage('bot', "Impossible de contacter le serveur. Vérifie que l'application tourne bien.");
+  } finally {
+    sendBtn.disabled = false;
+    questionInput.focus();
+  }
+});
+
+async function loadDocuments() {
+  try {
+    const res = await fetch(`${API_BASE}/api/documents`);
+    const docs = await res.json();
+    if (docs.length === 0) {
+      docListEl.innerHTML = '<p class="status-line">Aucun document importé pour l\'instant.</p>';
+      return;
+    }
+    docListEl.innerHTML = '';
+    docs.forEach(doc => {
+      const item = document.createElement('div');
+      item.className = 'doc-item';
+      item.innerHTML = `
+        <div class="name">${doc.nomFichier}</div>
+        <div class="meta">${doc.statut} · ${doc.nombreChunks ?? 0} chunks</div>
+        <button data-id="${doc.id}">Supprimer</button>
+      `;
+      item.querySelector('button').addEventListener('click', () => deleteDocument(doc.id));
+      docListEl.appendChild(item);
+    });
+  } catch (err) {
+    docListEl.innerHTML = '<p class="status-line">Erreur de chargement des documents.</p>';
+  }
+}
+
+async function deleteDocument(id) {
+  if (!confirm('Supprimer ce document et ses vecteurs indexés ?')) return;
+  await fetch(`${API_BASE}/api/documents/${id}`, { method: 'DELETE' });
+  loadDocuments();
+}
+
+uploadBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) {
+    uploadStatus.textContent = 'Choisis un fichier PDF avant d\'importer.';
+    return;
+  }
+  uploadBtn.disabled = true;
+  uploadStatus.textContent = 'Import et indexation en cours (peut prendre 30s)…';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/documents/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      uploadStatus.textContent = 'Erreur : ' + (data.message || 'échec de l\'import.');
+    } else {
+      uploadStatus.textContent = `"${data.nomFichier}" indexé (${data.nombreChunks} chunks).`;
+      fileInput.value = '';
+      loadDocuments();
+    }
+  } catch (err) {
+    uploadStatus.textContent = 'Impossible de contacter le serveur.';
+  } finally {
+    uploadBtn.disabled = false;
+  }
+});
+
+loadDocuments();
+</script>
+
+</body>
+</html>
